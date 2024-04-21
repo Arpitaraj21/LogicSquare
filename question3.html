@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        table {
+            width: 100vh;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 2px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: black;
+            color: white;
+        }
+
+        input {
+            padding: 10px;
+            width: 300px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Search cafes </h1>
+    <input type="text" id="searchBox" placeholder="Search cafes...">
+    <table id="cafeTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Street</th>
+                <th>Locality</th>
+                <th>Postal Code</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        window.onload = async function () {
+            const sBox = document.getElementById('searchBox');
+            const cafeTBody = document.querySelector('#cafeTable tbody');
+
+            async function fetchData(url) {
+                const response = await fetch(url);
+                return response.json();
+            }
+
+            try {
+                const [cafesData, placesData] = await Promise.all([
+                    fetchData('https://raw.githubusercontent.com/debojyoti/places-fake-rest-api/master/cafes.json'),
+                    fetchData('https://raw.githubusercontent.com/debojyoti/places-fake-rest-api/master/places.json')
+                ]);
+
+                const cafes = cafesData.cafes;
+                const places = placesData.places;
+
+                function displayCafes(filteredCafes = cafes) {
+                    cafeTBody.innerHTML = '';
+                    filteredCafes.forEach(cafe => {
+                        const place = places.find(p => p.id === cafe.location_id);
+                        if (place) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${cafe.name}</td>
+                                <td>${place.street_no}</td>
+                                <td>${place.locality}</td>
+                                <td>${place.postal_code}</td>
+                                <td>${place.lat}</td>
+                                <td>${place.long}</td>
+                            `;
+                            cafeTBody.appendChild(row);
+                        }
+                    });
+                }
+
+                displayCafes();
+
+                sBox.addEventListener('input', () => {
+                    const searchTerm = sBox.value.trim().toLowerCase();
+                    const filteredCafes = cafes.filter(cafe => cafe.name.toLowerCase().includes(searchTerm));
+                    displayCafes(filteredCafes);
+
+
+                    const tr = cafeTBody.getElementsByTagName('tr');
+                    for (let i = 0; i < tr.length; i++) {
+                        let td = tr[i].getElementsByTagName('td')[0];
+                        if (td) {
+                            let textValue = td.textContent || td.innerText;
+                            if (textValue.toLowerCase().includes(searchTerm)) {
+                                tr[i].style.display = '';
+                            } else {
+                                tr[i].style.display = 'none';
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+    </script>
+</body>
+
+</html>
